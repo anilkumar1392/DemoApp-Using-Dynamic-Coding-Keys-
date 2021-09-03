@@ -10,24 +10,33 @@ import XCTest
 
 class DemoAppTests: XCTestCase {
 
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+    func test_withNoData_showsZeroCell(){
+        let (sut,_) = makeSut()
+        XCTAssertEqual(sut.users.count, 0)
+        XCTAssertEqual(sut.tableView(sut.tableView, numberOfRowsInSection: 0), 0)
+        XCTAssertEqual(sut.tableView(sut.tableView, numberOfRowsInSection: 1), 0)
     }
 
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-    }
-
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-    }
-
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
+    func test_withApiCall_showsDataOnCell(){
+        let (sut,userService) = makeSut()
+        let expectation = self.expectation(description: "userService")
+        userService.getUsers { (users) in
+            sut.users = users ?? []
+            sut.tableView.reloadData()
+            expectation.fulfill()
+            XCTAssertNotEqual(sut.users.count, 0)
+            XCTAssertEqual(sut.tableView(sut.tableView, numberOfRowsInSection: 0), sut.users.count)
         }
+        waitForExpectations(timeout: 10, handler: nil)
     }
-
+    
+    
+    //MARK: - Helper
+    
+    func makeSut() -> (HomeListVC,UsersService) {
+        let userList = ApiHelperMock()
+        let vc = HomeListComposer.listComposedWith(userLoader: userList)
+        _ = vc.view
+        return (vc,userList)
+    }
 }
